@@ -1,21 +1,22 @@
 {
-  "name": "webscraper",
+  "name": "mongo-web-scraper",
   "version": "1.0.0",
   "description": "In this assignment, you'll create a web app that lets users leave comments on the latest news. But you're not going to actually write any articles; instead, you'll flex your Mongoose and Cheerio muscles to scrape news from another site.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hknowlton/webscraper.git"
+    "url": "git+https://github.com/haginl1/mongo-web-scraper.git"
   },
-  "author": "HK",
+  "author": "LAH",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/hknowlton/webscraper/issues"
+    "url": "https://github.com/haginl1/mongo-web-scraper/issues"
   },
-  "homepage": "https://github.com/hknowlton/webscraper#readme",
+  "homepage": "https://github.com/haginl1/mongo-web-scraper#readme",
   "dependencies": {
     "body-parser": "^1.17.2",
     "cheerio": "^1.0.0-rc.1",
@@ -24,5 +25,6 @@
     "mongoose": "^4.10.4",
     "path": "^0.12.7",
     "request": "^2.81.0"
-  }
+  },
+  "devDependencies": {}
 }
