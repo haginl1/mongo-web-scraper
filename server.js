@@ -33,9 +33,10 @@ app.engine('handlebars', exphbs({
 app.set('view engine', 'handlebars');
 
 //Local Database configuration with mongoose
-mongoose.connect("mongodb://localhost/comicsDB");
+//mongoose.connect("mongodb://localhost/comicsDB");
 //to deploy use
-// mongoose.connect("mongodb://heroku_htkv646v:8i7hgdnv85219v2d43reo1flbc@ds157571.mlab.com:57571/heroku_htkv646v")
+mongoose.connect("mongodb://heroku_hftl0rtv:4jllh9tjqho971tvv0kcb998q6@ds163721.mlab.com:63721/heroku_hftl0rtv")
+//
 var db = mongoose.connection;
 
 // Show any mongoose errors
