@@ -3,16 +3,20 @@ var express = require("express");
 var exphbs = require("express-handlebars");
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
+var methodOverride = require('method-override')
+var path = require("path");
+
 // Requiring our Note and Article models
 var Note = require("./models/note.js");
 var Article = require("./models/article.js");
+
 // Our scraping tools
 var request = require("request");
 var cheerio = require("cheerio");
+
 // Set mongoose to leverage built in JavaScript ES6 Promises
 mongoose.Promise = Promise;
 var PORT = process.env.PORT || 3000;
-var path = require("path");
 
 
 // Initialize Express
@@ -22,6 +26,9 @@ var app = express();
 app.use(bodyParser.urlencoded({
     extended: false
 }));
+
+// override with POST having ?_method=PUT
+app.use(methodOverride('_method'))
 
 // Make public a static dir
 app.use(express.static("public"));
@@ -33,10 +40,10 @@ app.engine('handlebars', exphbs({
 app.set('view engine', 'handlebars');
 
 //Local Database configuration with mongoose
-//mongoose.connect("mongodb://localhost/comicsDB");
+// mongoose.connect("mongodb://localhost/comicsDB");
 //to deploy use
 mongoose.connect("mongodb://heroku_hftl0rtv:4jllh9tjqho971tvv0kcb998q6@ds163721.mlab.com:63721/heroku_hftl0rtv")
-//
+
 var db = mongoose.connection;
 
 // Show any mongoose errors
@@ -51,17 +58,14 @@ db.once("open", function() {
 
 
 // Routes
-// =======================
+// =========================================
 //home page
 app.get("/", function(req, res) {
-    
-    res.redirect('/scrape');
+    res.render('index');
 });
-
 
 // A GET request to scrape the comics website
 app.get("/scrape", function(req, res) {
-
     // First, we grab the body of the html with request
     request("http://comicsalliance.com/", function(error, response, html) {
         // Then, we load that into cheerio and save it to $ for a shorthand selector
@@ -91,48 +95,48 @@ app.get("/scrape", function(req, res) {
 
         });
     });
-    // Tell the browser that we finished scraping the text
+    // Bring you to the all articles list when it is done scrapign
     res.redirect("/articles");
 });
 
 // This will get the articles we scraped from the mongoDB
 app.get("/articles", function(req, res) {
-    // Grab every doc in the Articles array
-    Article.find({}, function(error, doc) {
-        //Log any errors
-        if (error) {
-            console.log(error);
-        }
-        // Or send the doc to the browser as a json object
-        else {
-            res.render('scrape', {
-                allArticles: doc
-            });
-        }
-    });
+  // Grab every doc in the Articles array
+  Article.find({}, function(error, doc) {
+      //Log any errors
+      if (error) {
+          console.log(error);
+      }
+      // if no errors render our page with the articles we scraped
+      else {
+          res.render('scrape', {
+              allArticles: doc
+          });
+      }
+  });
 });
 
-// Grab an article by it's ObjectId
+// Grab an article by it's ObjectId and load the notes
 app.get("/articles/:id", function(req, res) {
-    // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
-    Article.findOne({ "_id": req.params.id })
-        // ..and populate all of the notes associated with it
-        .populate("note")
-        // now, execute our query
-        .exec(function(error, doc) {
-            console.log(doc)
-
-            // Log any errors
-            if (error) {
-                console.log(error);
-            }
-            // Otherwise, send the doc to the browser as a json object
-            else {
-                res.render('comments', {
-                    articles: doc
-                });
-            }
-        });
+  // Using the id passed in the id parameter 
+    //prepare a query that finds the matching one in our db...
+  Article.findOne({ "_id": req.params.id })
+    // ..and populate all of the notes associated with it
+    .populate("note")
+    // now, execute our query
+    .exec(function(error, doc) {
+        console.log(doc)
+        // Log any errors
+        if (error) {
+          console.log(error);
+        }
+        //if no errors render the page
+        else {
+          res.render('comments', {
+              articles: doc
+          });
+        }
+    });
 });
 
 
@@ -141,14 +145,13 @@ app.post("/articles/:id", function(req, res) {
   // Create a new note and pass the req.body to the entry
   var newNote = new Note(req.body);
   var currentArticleID = req.params.id;
-
-  // // And save the new note the db
+  //And save the new note the db
   newNote.save(function(error, doc) {
     // Log any errors
     if (error) {
       console.log(error);
     }
-    //   // Otherwise
+    // Otherwise
     else {
       // Use the article id to find and update it's note
       Article.findOneAndUpdate({ "_id": req.params.id }, { "note": doc._id })
@@ -156,10 +159,10 @@ app.post("/articles/:id", function(req, res) {
         .exec(function(err, doc) {
           // Log any errors
           if (err) {
-              console.log(err);
+            console.log(err);
           } else {
-              // Or send the document to the browser
-              res.redirect("/articles/" + currentArticleID)
+            // Or send the document to the browser
+            res.redirect("/articles/" + currentArticleID)
           }
       });
     }
@@ -168,38 +171,51 @@ app.post("/articles/:id", function(req, res) {
 
 //saving an article
 app.post("/save/:id", function(req, res) {
-    Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
-        // Execute the above query
-        .exec(function(err, doc) {
-            // Log any errors
-            if (err) {
-                console.log(err);
-            } else {
-                // Or send the document to the browser
-                res.redirect("/articles");
-            }
-        });
+  Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": true })
+    // Execute the above query
+    .exec(function(err, doc) {
+      // Log any errors
+      if (err) {
+          console.log(err);
+      } else {
+        // Or send the user back to the all articles page once it saved
+        res.redirect("/saved");
+      }
+    });
+})
 
+//deleting the article form the saved list
+app.put("/delete/:id", function(req, res) {
+  Article.findOneAndUpdate({ "_id": req.params.id }, { "saved": false })
+    // Execute the above query
+    .exec(function(err, doc) {
+      // Log any errors
+      if (err) {
+          console.log(err);
+      } else {
+        //basically.. refresh the page
+        res.redirect("/saved");
+      }
+    });
 })
 
 //showing the saved articles
 app.get("/saved", function(req, res) {
-    // Grab every saved doc in the Articles db
-    Article.find({ 'saved': true }, function(error, doc) {
-        //Log any errors
-        if (error) {
-            console.log(error);
-        }
-        // Or send the doc to the browser as a json object
-        else {
-            res.render('savedArticles', {
-                allArticles: doc
-            });
-        }
-    });
+  // Grab every saved doc in the Articles db
+  Article.find({ 'saved': true }, function(error, doc) {
+    //Log any errors
+    if (error) {
+        console.log(error);
+    // If no errors render the page with the saved articles
+    } else {
+        res.render('savedArticles', {
+            allArticles: doc
+        });
+      }
+  });
 });
 
-// Listen on port 3000
+// Listener
 app.listen(PORT, function() {
     console.log("App running on port 3000!");
 });
